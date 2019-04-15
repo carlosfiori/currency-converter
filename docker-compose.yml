@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:11.2
+    restart: always
+    volumes:
+      - './storage/app/postgres/data:/var/lib/postgresql/data'
+    environment:
+      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - '5432:5432'
+
+  devapp:
+    restart: unless-stopped
+    image: 'ambientum/php:7.3-nginx'
+    links:
+      - postgres
+    volumes:
+      - './:/var/www/app'
+      - '${HOME}/.composer/:/home/ambientum/.composer/'
+    ports:
+      - '8081:8080'
