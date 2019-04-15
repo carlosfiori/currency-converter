@@ -11,6 +11,7 @@ class ApiCurrencyRepository implements CurrencyRepository
 
     public function getCurrencyPrice(string $currency): float
     {
+        $currency = strtoupper($currency);
         if (is_null($this->currencies)) {
             $this->getApiData();
         }

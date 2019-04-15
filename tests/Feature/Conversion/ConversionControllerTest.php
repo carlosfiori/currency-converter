@@ -32,7 +32,6 @@ class ConversionControllerTest extends TestCase
         $this->executeTest($from, $to, $amount, $total);
     }
 
-
     /**
      * @param string $from
      * @param string $to
@@ -54,12 +53,30 @@ class ConversionControllerTest extends TestCase
             ]);
     }
 
+    public function testShouldConvertFromBTCtoBRL()
+    {
+        $from = 'BTC';
+        $to = 'BRL';
+        $amount = 1;
+        $total = 21242.81;
+        $this->executeTest($from, $to, $amount, $total);
+    }
+
+    public function testShouldConvertFromBRLtoBTC()
+    {
+        $from = 'BRL';
+        $to = 'BTC';
+        $amount = 1000;
+        $total = 0.0471;
+        $this->executeTest($from, $to, $amount, $total);
+    }
+
     public function testShouldConvertFromUSDtoBRL()
     {
         $from = 'USD';
         $to = 'BRL';
         $amount = 1;
-        $total = 0.2571;
+        $total = 3.8892;
         $this->executeTest($from, $to, $amount, $total);
     }
 
@@ -90,6 +107,29 @@ class ConversionControllerTest extends TestCase
         $this->executeTest($from, $to, $amount, $total);
     }
 
+    public function testShouldThrownErrorIfCurrencyNotSupported()
+    {
+        $this->withExceptionHandling();
+        $response = $this->json(
+            'POST',
+            '/api/conversion',
+            [
+                'from' => 'QWE',
+                'to' => 'QWE',
+                'amount' => 'QWE',
+            ]
+        );
+
+        $response->assertJsonValidationErrors([
+            'from',
+            'to',
+        ]);
+
+        $response->assertJsonMissingValidationErrors([
+            'amount',
+        ]);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -100,6 +140,9 @@ class ConversionControllerTest extends TestCase
             $currenciesValues = [
                 'USD' => 3.8892,
                 'EUR' => 4.3915,
+                'GBP' => 5.0827,
+                'ARS' => 0.0921,
+                'BTC' => 21242.81,
             ];
 
             foreach ($currenciesValues as $currency => $value) {

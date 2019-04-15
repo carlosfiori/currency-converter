@@ -8,6 +8,15 @@ class Converter
 {
     const BASE_CURRENCY = 'BRL';
 
+    const ALLOWED_CONVERSIONS = [
+        'BRL',
+        'USD',
+        'EUR',
+        'GBP',
+        'ARS',
+        'BTC',
+    ];
+
     /**
      * @var CurrencyRepository
      */
@@ -20,9 +29,6 @@ class Converter
 
     public function convert($from, $to, $amount): float
     {
-        $from = strtoupper($from);
-        $to = strtoupper($to);
-
         if ($from === $to) {
             return $amount;
         }
@@ -40,15 +46,9 @@ class Converter
 
     private function convertUsingBaseCurrency($from, $to, $amount): float
     {
-        return $amount / $this->getBaseCurrencyPriceConverter($from, $to);
-    }
-
-    private function getBaseCurrencyPriceConverter($from, $to): float
-    {
         if ($from == self::BASE_CURRENCY) {
-            return $this->currencyRepository->getCurrencyPrice($to);
+            return $amount / $this->currencyRepository->getCurrencyPrice($to);
         }
-
-        return $this->currencyRepository->getCurrencyPrice($from);
+        return $amount * $this->currencyRepository->getCurrencyPrice($from);
     }
 }
