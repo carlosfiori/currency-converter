@@ -3,6 +3,8 @@
 namespace App\Domains\Currency;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ClientException;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 
 class ApiCurrencyRepository implements CurrencyRepository
@@ -13,21 +15,36 @@ class ApiCurrencyRepository implements CurrencyRepository
     {
         $currency = strtoupper($currency);
         if (is_null($this->currencies)) {
-            $this->getApiData();
+            $this->updateData();
         }
 
         $buy = $this->currencies->$currency->buy;
         return $buy;
     }
 
-    private function getApiData()
+    private function updateData()
     {
         $seconds = 300;
         $this->currencies = Cache::remember('api-currency-data', $seconds, function () {
-            $client = new Client();
-            $response = $client->get('https://api.hgbrasil.com/finance');
-            $json = json_decode($response->getBody());
-            return $json->results->currencies;
+            return $this->getApiData();
         });
+    }
+
+    private function getApiData()
+    {
+        try {
+            $apiKey = config('currency.hgbrasil_api_key');
+            $client = new Client();
+            $response = $client->get("https://api.hgbrasil.com/finance?key=$apiKey");
+        } catch (ClientException $e) {
+            if ($e->getCode() === Response::HTTP_FORBIDDEN) {
+                throw new ApiLimitExceedException("Daily limit exceeded", Response::HTTP_SERVICE_UNAVAILABLE);
+            }
+
+            throw $e;
+        }
+
+        $json = json_decode($response->getBody());
+        return $json->results->currencies;
     }
 }

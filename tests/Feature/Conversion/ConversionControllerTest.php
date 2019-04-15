@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Conversion;
 
+use App\Domains\Currency\ApiLimitExceedException;
 use App\Domains\Currency\CurrencyRepository;
+use Illuminate\Foundation\Testing\TestResponse;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Tests\TestCase;
@@ -23,6 +25,34 @@ class ConversionControllerTest extends TestCase
         ]);
     }
 
+    public function testShouldThrowExceptionIfLimitHasReached()
+    {
+        $this->app->bind(CurrencyRepository::class, function () {
+            $mock = Mockery::mock(CurrencyRepository::class)->makePartial();
+            $mock
+                ->shouldReceive('getCurrencyPrice')
+                ->andThrows(ApiLimitExceedException::class, "Daily limit exceeded", 503);
+
+            return $mock;
+        });
+
+        $this->withExceptionHandling();
+        $from = 'BRL';
+        $to = 'USD';
+        $amount = 3.8892;
+        $response = $this->json('POST', '/api/conversion', [
+            'from' => $from,
+            'to' => $to,
+            'amount' => $amount,
+        ]);
+
+        $response
+            ->assertStatus(503)
+            ->assertJson([
+                'error' => "Daily limit exceeded",
+            ]);
+    }
+
     public function testShouldConvertFromBRLtoUSD()
     {
         $from = 'BRL';
@@ -37,8 +67,10 @@ class ConversionControllerTest extends TestCase
      * @param string $to
      * @param float  $amount
      * @param float  $total
+     *
+     * @return TestResponse
      */
-    public function executeTest(string $from, string $to, float $amount, float $total): void
+    public function executeTest(string $from, string $to, float $amount, float $total): TestResponse
     {
         $response = $this->json('POST', '/api/conversion', [
             'from' => $from,
@@ -51,6 +83,7 @@ class ConversionControllerTest extends TestCase
             ->assertJson([
                 'total' => $total,
             ]);
+        return $response;
     }
 
     public function testShouldConvertFromBTCtoBRL()
@@ -58,7 +91,7 @@ class ConversionControllerTest extends TestCase
         $from = 'BTC';
         $to = 'BRL';
         $amount = 1;
-        $total = 21242.81;
+        $total = 21223.97;
         $this->executeTest($from, $to, $amount, $total);
     }
 
@@ -142,7 +175,7 @@ class ConversionControllerTest extends TestCase
                 'EUR' => 4.3915,
                 'GBP' => 5.0827,
                 'ARS' => 0.0921,
-                'BTC' => 21242.81,
+                'BTC' => 21223.97,
             ];
 
             foreach ($currenciesValues as $currency => $value) {
