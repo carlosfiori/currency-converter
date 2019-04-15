@@ -11,3 +11,4 @@
 |
 */
 
+Route::post('conversion', 'Conversion\ConversionController@convert');
