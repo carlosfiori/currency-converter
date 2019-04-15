@@ -18,8 +18,7 @@ class ApiCurrencyRepository implements CurrencyRepository
             $this->updateData();
         }
 
-        $buy = $this->currencies->$currency->buy;
-        return $buy;
+        return $this->currencies->$currency->buy;
     }
 
     private function updateData()

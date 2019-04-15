@@ -48,6 +48,7 @@ class ConversionControllerTest extends TestCase
 
         $response
             ->assertStatus(503)
+            ->assertHeader('Retry-After')
             ->assertJson([
                 'error' => "Daily limit exceeded",
             ]);
